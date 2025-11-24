@@ -22,3 +22,98 @@ Prisma Migrate is a database migration tool that helps developers manage schema 
 Prisma Studio is a web-based GUI that allows developers to explore and manipulate their database data visually. It provides an intuitive interface for viewing, editing, and deleting records in the database. Prisma Studio makes it easy for developers to inspect their data and perform operations without writing SQL queries.
 
 Overall, Prisma ORM simplifies database access and management for developers by providing a type-safe and intuitive way to interact with databases. It streamlines the development process and helps developers build robust and scalable applications.
+
+## Installation
+To install Prisma ORM, you need to have Node.js and npm (Node Package Manager) installed on your machine. Once you have them set up, you can follow these steps to install Prisma:
+1. Create a new Node.js project (if you don't have one already):
+```bash
+mkdir my-prisma-project
+cd my-prisma-project
+npm init -y
+```
+
+2. Install Prisma CLI as a development dependency:
+```bash
+npm install prisma --save-dev
+```
+3. Initialize Prisma in your project:
+```bash
+npx prisma init
+```
+
+This command will create a new `prisma` directory in your project with a `schema.prisma` file and a `.env` file for your database connection.
+4. Install Prisma Client as a dependency:
+```bash
+npm install @prisma/client
+```
+That's it! You have successfully installed Prisma ORM in your Node.js project. You can now start defining your database schema in the `schema.prisma` file and using Prisma Client to interact with your database.
+
+## Usage
+Once you have installed Prisma ORM and set up your database schema, you can start using Prisma Client to interact with your database. Here's a basic example of how to use Prisma Client in your Node.js application:
+1. Import Prisma Client in your JavaScript or TypeScript file:
+```javascript
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+```
+
+2. Use Prisma Client to perform CRUD operations. For example, let's say you have a `User` model defined in your `schema.prisma` file:
+```prisma
+model User {
+  id    Int     @id @default(autoincrement())
+  name  String
+  email String  @unique
+}
+```
+
+You can create, read, update, and delete users using Prisma Client as follows:
+```javascript
+// Create a new user
+async function createUser() {
+  const newUser = await prisma.user.create({
+    data: {
+      name: 'John Doe',
+      email: 'john.doe@example.com',
+    },
+  });
+  console.log('New user created:', newUser);
+}
+// Read all users
+async function getUsers() {
+  const users = await prisma.user.findMany();
+  console.log('All users:', users);
+}
+// Update a user
+async function updateUser(userId) {
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { name: 'Jane Doe' },
+  });
+  console.log('User updated:', updatedUser);
+}
+// Delete a user
+async function deleteUser(userId) {
+  const deletedUser = await prisma.user.delete({
+    where: { id: userId },
+  });
+  console.log('User deleted:', deletedUser);
+}
+```
+
+3. Don't forget to call the functions and handle errors appropriately:
+```javascript
+async function main() {
+  try {
+    await createUser();
+    await getUsers();
+    await updateUser(1); // Replace with the actual user ID
+    await deleteUser(1); // Replace with the actual user ID
+  } catch (error) {
+    console.error('Error:', error);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+main();
+```
+
+Overall, Prisma Client provides a simple and efficient way to interact with your database using a type-safe API. You can perform various operations on your database records with ease, making it a powerful tool for building robust applications.
