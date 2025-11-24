@@ -167,3 +167,313 @@ main();
 ```
 
 Overall, Prisma Client provides a simple and efficient way to interact with your database using a type-safe API. You can perform various operations on your database records with ease, making it a powerful tool for building robust applications.
+
+
+#### Advanced Prisma Use Cases
+
+**1. Advanced Filtering, Sorting & Pagination (Real Apps)**
+
+Useful for building dashboards, admin panels, and APIs like `/products?search=...&sort=...&page=....`
+
+**Example: Search + Pagination + Sorting**
+```typescript
+const { q, page = 1, limit = 10, sort = "createdAt", order = "desc" } = req.query;
+
+const products = await prisma.product.findMany({
+  where: {
+    OR: [
+      { name: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+    ],
+  },
+  orderBy: { [sort]: order },
+  skip: (page - 1) * limit,
+  take: Number(limit),
+  select: {
+    id: true,
+    name: true,
+    price: true,
+    stock: true,
+  },
+});
+```
+
+**2. Prisma Transactions (Atomic Operations)**
+
+Critical when working with financial apps, wallet systems, or anything requiring ACID compliance.
+
+**Example: Payment Transaction (Atomic)**
+```typescript
+await prisma.$transaction(async (prisma) => {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { balance: { decrement: amount } },
+  });
+
+  await prisma.transaction.create({
+    data: {
+      userId: user.id,
+      amount,
+      type: "DEBIT",
+    },
+  });
+});
+```
+
+**3. Optimistic Locking (Concurrency Control)**
+
+Prevents race-conditions in high-traffic apps.
+
+**Example: Updating a product inventory safely**
+
+```typescript
+const product = await prisma.product.update({
+  where: {
+    id_version: {
+      id: productId,
+      version: currentVersion,
+    },
+  },
+  data: {
+    stock: { decrement: 1 },
+    version: { increment: 1 },
+  },
+});
+```
+
+**4. Nested Writes (Complex Relations in One Query)**
+
+Professional apps often require creating related entities in one atomic operation.
+
+**Example: Create User with Address + Orders at once**
+
+```typescript
+const user = await prisma.user.create({
+  data: {
+    name: "Alice",
+    email: "alice@example.com",
+    address: {
+      create: {
+        street: "123 Main St",
+        city: "New York",
+      },
+    },
+    orders: {
+      create: [
+        { total: 40 },
+        { total: 120 },
+      ],
+    },
+  },
+});
+```
+
+**5. Complex Relation Queries (Joins)**
+
+Used in analytics dashboards and admin APIs.
+
+**Example: Get user with orders & order items**
+
+```typescript
+const user = await prisma.user.findUnique({
+  where: { id: userId },
+  include: {
+    orders: {
+      include: {
+        items: true,
+      },
+    },
+  },
+});
+```
+
+**6. Bulk Operations (High Performance)**
+
+Used in e-commerce, data imports, and report generation.
+
+**Example: Create many records at once**
+
+```typescript
+await prisma.orderItem.createMany({
+  data: items.map((i) => ({
+    productId: i.id,
+    quantity: i.qty,
+    price: i.price,
+    orderId,
+  })),
+});
+```
+
+Example: Bulk Update
+```typescript
+await prisma.product.updateMany({
+  where: { stock: { lt: 5 } },
+  data: { isLowStock: true },
+});
+```
+
+**7. Partial Selects (Performance Optimization)**
+
+Used to reduce database load—best practice in large systems.
+
+**Example: Select only what you need**
+
+```typescript
+const minimalUser = await prisma.user.findUnique({
+  where: { id },
+  select: {
+    id: true,
+    email: true,
+  },
+});
+```
+
+**8. Soft Deletes (Enterprise Requirement)**
+
+Instead of deleting data → mark as deleted.
+
+**Model**
+
+```prisma
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  deletedAt DateTime?
+}
+```
+**Soft Delete Query**
+
+```typescript
+await prisma.user.update({
+  where: { id: userId },
+  data: { deletedAt: new Date() },
+});
+```
+
+**Global filter middleware**
+```typescript
+prisma.$use(async (params, next) => {
+  if (params.model === "User" && params.action === "findMany") {
+    params.args.where = {
+      ...params.args.where,
+      deletedAt: null,
+    };
+  }
+  return next(params);
+});
+```
+
+**9. Prisma Middleware (Logging, Validation, Metrics)**
+
+Used in production APIs to log performance or block invalid requests.
+
+**Example: Query Logger**
+```typescript
+prisma.$use(async (params, next) => {
+  const start = Date.now();
+  const result = await next(params);
+  const duration = Date.now() - start;
+  console.log(`Query ${params.model}.${params.action} took ${duration}ms`);
+  return result;
+});
+```
+
+**10. Handling Failures with try/catch + PrismaError**
+
+Critical for resilient, fault-tolerant systems.
+
+**Example: Unique constraint handling**
+```typescript
+try {
+  await prisma.user.create({
+    data: { email },
+  });
+} catch (e) {
+  if (e.code === "P2002") {
+    throw new Error("Email already exists");
+  }
+}
+```
+
+**11. Raw SQL (When You Need Ultimate Control)**
+
+Used for analytics, complex aggregations, or performance-heavy tasks.
+
+**Example: Execute custom SQL**
+```typescript
+const result = await prisma.$queryRaw`SELECT COUNT(*) FROM "User" WHERE "createdAt" > NOW() - INTERVAL '7 days'`;
+console.log('New users in last 7 days:', result);
+```
+
+**12. Prisma in Microservices / Serverless Architecture**
+
+Used in AWS Lambda, Vercel, Cloud Functions.
+
+**Example: Reuse Prisma Client in Serverless APIs**
+```typescript
+let prisma;
+
+if (!global.prisma) {
+  global.prisma = new PrismaClient();
+}
+
+prisma = global.prisma;
+
+export default prisma;
+```
+
+**13. Advanced Aggregations (Reporting, Analytics)**
+**Example: Sales Report**
+```typescript
+const report = await prisma.order.aggregate({
+  _sum: { total: true },
+  _avg: { total: true },
+  _count: true,
+  where: {
+    createdAt: {
+      gte: new Date("2025-01-01"),
+    },
+  },
+});
+```
+
+**14. Many-to-Many Relations (Tags, Categories)**
+**Example: Assign tags to a blog post**
+```typescript
+await prisma.post.update({
+  where: { id: postId },
+  data: {
+    tags: {
+      connect: tagIds.map((id) => ({ id })),
+    },
+  },
+});
+```
+
+**15. Seeding Your Database (Production & Dev)**
+**Example: `seed.ts`**
+```typescript
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  await prisma.user.createMany({
+    data: [
+      { name: 'Alice', email: 'alice@example.com' },
+      { name: 'Bob', email: 'bob@example.com' },
+     ],
+  });
+}
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+**Run seeding:**
+```bash
+npx prisma db seed
+```
