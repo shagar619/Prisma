@@ -87,6 +87,7 @@ model User {
 ```
 
 **7. Migrate Your Database**
+
 After defining your data models, you need to create and apply a migration to set up your database schema:
 ```bash
 npx prisma migrate dev --name init
@@ -98,12 +99,14 @@ This will:
 - Generate Prisma Client based on your schema.
 
 **8. Apply Migrations in Production**
+
 When deploying to production, use the following command to apply migrations:
 ```bash
 npx prisma migrate deploy
 ```
 
 **9. Reset Database (if needed)**
+
 If you want to reset your database and start fresh, you can use the following command:
 ```bash
 npx prisma migrate reset
@@ -114,6 +117,7 @@ This will:
 - Reseed the database if you have a seed script configured.
 
 **10. Push Schema to Database (Non-migration)**
+
 If you want to push your Prisma schema changes directly to the database without creating a migration, you can use:
 ```bash
 npx prisma db push
@@ -122,6 +126,7 @@ This is useful for prototyping or when you don't need migration history.
 
 
 **11. Seed Database**
+
 If you have a seed script defined in your `package.json`, you can run:
 ```bash
 npm run seed
@@ -153,6 +158,60 @@ main()
   .finally(async () => {
     await prisma.$disconnect();
   });
+```
+
+**12. Launch Prisma Studio (GUI)**
+
+You can launch Prisma Studio to visually explore and manage your database:
+```bash
+npx prisma studio
+```
+Using Prisma Studio, you can view, edit, and delete records in your database through a user-friendly web interface.
+
+**13. Format Prisma Schema**
+
+You can format your Prisma schema file to ensure consistent styling using the following command:
+```bash
+npx prisma format
+```
+
+**14. Check Migration Status**
+
+You can check the status of your migrations using the following command:
+```bash
+npx prisma migrate status
+```
+What's included:
+- Current database schema version
+- Applied and pending migrations
+- Details about each migration
+- Helpful for tracking migration history and ensuring your database is up to date.
+-- Useful for debugging migration issues.
+- Helps maintain consistency across different environments.
+
+**15. Introspect an Existing Database**
+
+If you have an existing database and want to generate a Prisma schema based on its structure, you can use the introspection feature:
+```bash
+npx prisma db pull
+```
+This command connects to your database using the connection string in your `.env` file and generates a `schema.prisma` file that reflects the current state of your database schema.
+
+**16. Opening Prisma Docs (Local Help)**
+
+You can open the Prisma documentation locally in your default web browser using the following command:
+```bash
+npx prisma --help
+```
+
+**17. Preview Feature Usage**
+
+Prisma occasionally introduces preview features that you can enable in your `schema.prisma` file. To use a preview feature, add the following block at the top of your schema:
+```prisma
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["featureName1", "featureName2"]
+}
 ```
 
 
