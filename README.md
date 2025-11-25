@@ -97,6 +97,67 @@ This will:
 - Apply the migration to your database, creating the necessary tables based on your data models.
 - Generate Prisma Client based on your schema.
 
+**8. Apply Migrations in Production**
+When deploying to production, use the following command to apply migrations:
+```bash
+npx prisma migrate deploy
+```
+
+**9. Reset Database (if needed)**
+If you want to reset your database and start fresh, you can use the following command:
+```bash
+npx prisma migrate reset
+```
+This will:
+- Drop all tables in the database.
+- Reapply all migrations.
+- Reseed the database if you have a seed script configured.
+
+**10. Push Schema to Database (Non-migration)**
+If you want to push your Prisma schema changes directly to the database without creating a migration, you can use:
+```bash
+npx prisma db push
+```
+This is useful for prototyping or when you don't need migration history.
+
+
+**11. Seed Database**
+If you have a seed script defined in your `package.json`, you can run:
+```bash
+npm run seed
+```
+
+Example seed script in package.json:
+```json
+"prisma": {
+  "seed": "ts-node prisma/seed.ts"
+}
+```
+Example seed script: prisma/seed.ts
+```typescript
+import { PrismaClient } from '@prisma/client';
+const prisma = new PrismaClient();
+async function main() {
+  await prisma.user.createMany({
+    data: [
+      { name: 'Alice', email: 'alice@example.com' },
+      { name: 'Bob', email: 'bob@example.com' },
+    ],
+  });
+}
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });
+```
+
+
+
+
 
 ## Usage
 Once you have installed Prisma ORM and set up your database schema, you can start using Prisma Client to interact with your database. Here's a basic example of how to use Prisma Client in your Node.js application:
